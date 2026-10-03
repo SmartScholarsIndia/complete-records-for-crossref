@@ -1,0 +1,23 @@
+# Every push and pull request: the plugin's whole test suite.
+name: tests
+on: [push, pull_request]
+jobs:
+  php:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.2', extensions: 'dom, libxml, mbstring, curl' }
+      # copies of Crossref's schema files (kept by the public project front-matter/commonmeta, pinned commits), so the
+      # completed deposit files are checked against Crossref's 4.3.6 / 5.3.1 / 5.4.0 schemas here too
+      - run: bash tests/schema_copies.sh /tmp/crossref-schema-copies
+      - run: php tests/run_tests.php
+        env:
+          CR_SCHEMA_CACHE: /tmp/crossref-schema-copies
+      - run: php tools/build.php --tar
+      # the two tools run before a deposit (Python + lxml)
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.10' }
+      - run: pip install lxml && python tests/test_validate.py && python tests/test_compare.py
+        env:
+          CR_SCHEMA_CACHE: /tmp/crossref-schema-copies

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE version SYSTEM "../../../lib/pkp/dtd/pluginVersion.dtd">
+
+<!--
+  * plugins/generic/crossrefComplete/version.xml
+  *
+  * Copyright (c) 2026 Smart Scholars
+  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
+  *
+  * Plugin version information (OJS 3.5 line).
+  -->
+<version>
+	<application>crossrefComplete</application>
+	<type>plugins.generic</type>
+	<release>1.0.0.5</release>
+	<date>2026-10-03</date>
+	<lazy-load>1</lazy-load>
+	<class>CrossrefCompletePlugin</class>
+</version>

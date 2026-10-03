@@ -1,0 +1,141 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-03T00:00:00+00:00\n"
+"PO-Revision-Date: 2026-10-03T00:00:00+00:00\n"
+"Language: en_US\n"
+
+msgid "plugins.generic.crossrefComplete.displayName"
+msgstr "Complete Records for Crossref"
+
+msgid "plugins.generic.crossrefComplete.description"
+msgstr "Completes every deposit made by OJS's own Crossref plugin with what the journal already holds in OJS: each article's reference list and each author's affiliation, and Crossmark when the journal has turned it on. After each deposit it reads the record back from Crossref and shows what landed. It never removes or changes what OJS sends; if a completed record would not fit Crossref's schema, OJS's own record is sent unchanged. Requires the Crossref plugin."
+
+msgid "plugins.generic.crossrefComplete.settings.description"
+msgstr "Choose what is added to the records OJS deposits with Crossref. Nothing is sent by this plugin on its own: it completes the deposits you (or OJS's scheduled task) already make."
+
+msgid "plugins.generic.crossrefComplete.settings.send"
+msgstr "Add to each deposit"
+
+msgid "plugins.generic.crossrefComplete.settings.references"
+msgstr "The article's reference list, as entered in OJS (a DOI is added only where a reference names exactly one DOI)"
+
+msgid "plugins.generic.crossrefComplete.settings.affiliations"
+msgstr "Each author's affiliation, as entered in OJS"
+
+msgid "plugins.generic.crossrefComplete.settings.crossmark"
+msgstr "Crossmark"
+
+msgid "plugins.generic.crossrefComplete.settings.crossmark.description"
+msgstr "Enter the DOI of your Crossmark policy page — the page itself must already have that DOI registered at Crossref. Every deposit then carries Crossmark, and each article that has gone to Crossref with it shows Crossref's Crossmark button under its title. Leave empty to send no Crossmark and show no button."
+
+msgid "plugins.generic.crossrefComplete.settings.crossmarkPolicy"
+msgstr "Crossmark policy DOI (for example 10.12345/crossmark-policy)"
+
+msgid "plugins.generic.crossrefComplete.settings.crossmarkPolicy.invalid"
+msgstr "This is not a DOI. Enter it as 10.xxxx/… or as a https://doi.org/ link."
+
+msgid "plugins.generic.crossrefComplete.status.title"
+msgstr "Crossref read-back"
+
+msgid "plugins.generic.crossrefComplete.status.description"
+msgstr "Each record deposited since this plugin was turned on, read back from Crossref's public record. Up to ten records are checked each time this window opens; Crossref processes deposits in its own time, so a fresh deposit shows as waiting."
+
+msgid "plugins.generic.crossrefComplete.status.none"
+msgstr "No deposits yet. Deposit articles with the Crossref plugin; they will be listed here."
+
+msgid "plugins.generic.crossrefComplete.status.doi"
+msgstr "DOI"
+
+msgid "plugins.generic.crossrefComplete.status.deposited"
+msgstr "Deposited"
+
+msgid "plugins.generic.crossrefComplete.status.result"
+msgstr "On Crossref's record"
+
+msgid "plugins.generic.crossrefComplete.status.notChecked"
+msgstr "Not checked yet"
+
+msgid "plugins.generic.crossrefComplete.status.unreachable"
+msgstr "Crossref could not be reached ({$reason}). Nothing is lost: open this window again later."
+
+msgid "plugins.generic.crossrefComplete.state.landed"
+msgstr "landed"
+
+msgid "plugins.generic.crossrefComplete.state.partly"
+msgstr "partly"
+
+msgid "plugins.generic.crossrefComplete.state.missing"
+msgstr "missing"
+
+msgid "plugins.generic.crossrefComplete.state.waiting"
+msgstr "waiting"
+
+msgid "plugins.generic.crossrefComplete.settings.check"
+msgstr "Before each deposit"
+
+msgid "plugins.generic.crossrefComplete.settings.schemaCheck"
+msgstr "Check each completed file against Crossref's published schema, and send OJS's own file when it does not pass (recommended)"
+
+msgid "plugins.generic.crossrefComplete.status.schemaCheck.valid"
+msgstr "Last completed file ({$date}): passed Crossref's schema {$version}."
+
+msgid "plugins.generic.crossrefComplete.status.schemaCheck.invalid"
+msgstr "Last completed file ({$date}): did not pass Crossref's schema {$version}, so OJS's own file was sent unchanged. {$errors}"
+
+msgid "plugins.generic.crossrefComplete.status.schemaCheck.unchecked"
+msgstr "Last completed file ({$date}): not checked against Crossref's schema — {$why}. It was used after the plugin's own order checks."
+
+msgid "plugins.generic.crossrefComplete.status.schemaCheck.none"
+msgstr "No completed file has been checked against Crossref's schema yet."
+
+msgid "plugins.generic.crossrefComplete.status.schemaCheck.off"
+msgstr "The check against Crossref's schema is switched off in this plugin's settings."
+
+msgid "plugins.generic.crossrefComplete.status.slow"
+msgstr "Crossref answered slowly, so the remaining records will be read the next time this window opens."
+
+msgid "plugins.generic.crossrefComplete.state.test"
+msgstr "sent to Crossref's test system — not live"
+
+msgid "plugins.generic.crossrefComplete.status.testMode"
+msgstr "OJS's Crossref plugin is set to Crossref's test system (\"Use the CrossRef test API\" is ticked in Tools → Import/Export → CrossRef XML Export Plugin → Settings). Deposits from this journal go to Crossref's test system, not to the live Crossref, although OJS marks the articles Registered. They are listed here as test deposits and are not read back."
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.title"
+msgstr "The last file OJS's Crossref plugin built"
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.none"
+msgstr "None yet. Export one article from OJS's Crossref plugin (Export, not Register), then open this window again: it shows what this plugin found in OJS for each article and what it added."
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.head"
+msgstr "{$date}, {$count} article(s): {$outcome}"
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.completed"
+msgstr "the completed file was used."
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.nothing"
+msgstr "OJS holds nothing this plugin adds for these articles, so OJS's own file was used."
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.kept"
+msgstr "OJS's own file was used unchanged ({$problems})."
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.invalid"
+msgstr "the completed file did not pass Crossref's schema, so OJS's own file was used."
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.added"
+msgstr "{$doi}: {$references} reference(s) and {$affiliations} institution(s) added{$crossmark}{$notes}."
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.withCrossmark"
+msgstr ", with Crossmark"
+
+msgid "plugins.generic.crossrefComplete.status.lastFile.notAdded"
+msgstr "{$doi}: nothing added ({$notes})."
+
+msgid "plugins.generic.crossrefComplete.status.schemaCheck.standIn"
+msgstr "(Crossref's site does not serve {$files}, which this schema names; W3C's copy of that standard file was used in its place.)"

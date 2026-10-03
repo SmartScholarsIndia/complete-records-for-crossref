@@ -1,0 +1,31 @@
+{
+ "source": "an example record in the shape of a DOI registry export line",
+ "record": {
+  "doi": "10.5555/ejt.2020.v5.i3.pp15-18",
+  "url": "https://journal.example.org/index.php/pub/article/view/326",
+  "v": 2,
+  "t": "Tables & Figures in an Example Article",
+  "pub": "2020-04-27",
+  "vol": "5",
+  "iss": "3",
+  "pg": {
+   "first": "15",
+   "last": "18"
+  },
+  "au": [
+   {
+    "f": "Leo K. Tester"
+   },
+   {
+    "f": "Ana R. Example"
+   },
+   {
+    "f": "Ravi T Example"
+   }
+  ],
+  "lang": "en",
+  "type": "JournalArticle",
+  "ct": "Example Journal of Testing & Practice",
+  "issn": "1234-5679"
+ }
+}
