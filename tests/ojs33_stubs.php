@@ -93,10 +93,20 @@ class StubResponse {
     function getBody() { return $this->body; }
 }
 class StubHttp {
-    public $answers = array(); public $asked = array(); public $fail = null; public $handler = null;
+    public $answers = array(); public $asked = array(); public $options = array(); public $fail = null; public $handler = null;
+    /** @var float seconds the answer takes; past the request's 'timeout' option it is an error, not an answer, as with Guzzle's curl handler (CURLOPT_TIMEOUT_MS) */
+    public $delay = 0;
     function request($method, $url, $opts) {
         $this->asked[] = $url;
+        $this->options[] = $opts;
         if ($this->fail) throw new Exception($this->fail);
+        if ($this->delay > 0) {
+            if (isset($opts['timeout']) && $this->delay > $opts['timeout']) {
+                usleep((int) ($opts['timeout'] * 1000000));
+                throw new Exception('cURL error 28: Operation timed out after ' . (int) ($opts['timeout'] * 1000) . ' milliseconds');
+            }
+            usleep((int) ($this->delay * 1000000));
+        }
         if ($this->handler) { $h = $this->handler; return $h($url); }
         foreach ($this->answers as $match => $resp) if (strpos($url, $match) !== false) return $resp;
         return new StubResponse(404, '{}');

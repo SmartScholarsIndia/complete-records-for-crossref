@@ -13,10 +13,24 @@
  * grows with the journal (OJS 3.3 keeps a plugin setting in a TEXT column of 64 KB), and the note travels with OJS's
  * files in every backup.
  *
+ * 1.0.0.6 (6 Oct 2026): a journal whose records reach Crossref another way — a sponsor registers its DOIs, or another
+ * service deposits the metadata, Crossmark included — never deposits through this plugin, so no note is ever left and
+ * no button was ever shown there. With the journal's choice "Our records reach Crossref another way", the button is
+ * decided from Crossref's own public record of the article instead (api.crossref.org/works/<doi>, its update-policy
+ * field, crossref.org/documentation/retrieve-metadata/rest-api/): shown only when that record names the journal's
+ * Crossmark policy DOI. Crossref's documentation expects the button on every item registered with the policy page
+ * (crossref.org/documentation/crossmark/participating-in-crossmark/), and the widget reads Crossref's record for the
+ * DOI in the page, whoever deposited it. What Crossref said is kept per DOI as one small file beside the notes,
+ * <files_dir>/crossrefComplete/crossmark-record/<journal id>/<md5 of the DOI>.json, so that Crossref is asked at most
+ * once per DOI — and, for a record without the policy or a read that failed, once a day (Crossref's API etiquette:
+ * cache, never repeat the same request; crossref.org/documentation/retrieve-metadata/rest-api/access-and-authentication/).
+ *
  * PHP 7.3 syntax on purpose: OJS 3.3 still runs there.
  *
  * Copyright (c) 2026 Smart Scholars. Distributed under the GNU GPL v3. See LICENSE.
  */
+
+require_once __DIR__ . '/CcrCompleter.php';   // CcrCompleter::bareDoi, the one reading of a DOI the plugin uses
 
 class CcrCrossmark
 {
@@ -107,6 +121,79 @@ class CcrCrossmark
     {
         $path = self::markerPath($filesDir, $contextId, $doi);
         return $path !== '' && is_file($path);
+    }
+
+    // ---- 1.0.0.6: the button decided from Crossref's own record (a journal whose records reach Crossref another way)
+
+    /** A record that does not name the policy, or a read that failed, is read again only after this long. */
+    const RECORD_RETRY_SECONDS = 86400;
+
+    /**
+     * The Crossmark policy DOI a record names — the REST API's update-policy field, given as a doi.org address — in the
+     * plugin's own form: the bare DOI, lower case. '' when the record names none.
+     * @param mixed $message the "message" of api.crossref.org/works/<doi>
+     * @return string
+     */
+    public static function recordPolicy($message)
+    {
+        if (!is_array($message) || empty($message['update-policy']) || !is_string($message['update-policy'])) return '';
+        return strtolower(CcrCompleter::bareDoi($message['update-policy']));
+    }
+
+    /** Where what Crossref said about one DOI of one journal is kept; '' when OJS has no files directory set. */
+    public static function recordPath($filesDir, $contextId, $doi)
+    {
+        $filesDir = rtrim((string) $filesDir, '/');
+        $doi = strtolower(trim((string) $doi));
+        if ($filesDir === '' || $doi === '') return '';
+        return $filesDir . '/crossrefComplete/crossmark-record/' . (int) $contextId . '/' . md5($doi) . '.json';
+    }
+
+    /**
+     * What is kept about this DOI: 'policy' (the journal's policy DOI the answer was compared with), 'found' (the policy
+     * the record named, '' for none, null when Crossref could not be read) and 'at' (when); null when nothing is kept.
+     * @return array|null
+     */
+    public static function readRecord($path)
+    {
+        if ($path === '' || !is_file($path)) return null;
+        $v = json_decode((string) @file_get_contents($path), true);
+        if (!is_array($v) || !isset($v['at']) || !isset($v['policy']) || !array_key_exists('found', $v)) return null;
+        return array('policy' => (string) $v['policy'], 'found' => $v['found'] === null ? null : (string) $v['found'], 'at' => (int) $v['at']);
+    }
+
+    /**
+     * Keep what Crossref said about this DOI.
+     * @param string|null $found the policy the record named ('' for none), null when Crossref could not be read
+     * @return bool
+     */
+    public static function writeRecord($path, $doi, $policy, $found, $at = null)
+    {
+        if ($path === '') return false;
+        $dir = dirname($path);
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) return false;
+        $v = array('doi' => strtolower(trim((string) $doi)), 'policy' => strtolower((string) $policy),
+                   'found' => $found === null ? null : (string) $found, 'at' => $at === null ? time() : (int) $at);
+        return @file_put_contents($path, json_encode($v) . "\n") !== false;
+    }
+
+    /**
+     * From what is kept and the journal's Crossmark policy DOI as set now: 'show' — Crossref's record names this policy
+     * (kept for good, until the journal's policy changes); 'hide' — a different policy, none, or a failed read, less than
+     * RECORD_RETRY_SECONDS ago; 'read' — nothing kept, the policy has changed since Crossref was asked, or a day has passed.
+     * @param array|null $kept readRecord()
+     * @param string $policy the journal's policy DOI, bare and lower case; '' hides
+     * @param int $now
+     * @return string
+     */
+    public static function recordDecision($kept, $policy, $now)
+    {
+        $policy = strtolower(trim((string) $policy));
+        if ($policy === '') return 'hide';
+        if (!is_array($kept)) return 'read';
+        if ($kept['found'] !== null && $kept['found'] !== '' && $kept['found'] === $policy) return 'show';
+        if ($kept['policy'] !== $policy) return 'read';
+        return ((int) $now - $kept['at']) >= self::RECORD_RETRY_SECONDS ? 'read' : 'hide';
     }
 
     /**

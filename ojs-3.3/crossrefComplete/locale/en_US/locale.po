@@ -41,6 +41,12 @@ msgstr "Crossmark policy DOI (for example 10.12345/crossmark-policy)"
 msgid "plugins.generic.crossrefComplete.settings.crossmarkPolicy.invalid"
 msgstr "This is not a DOI. Enter it as 10.xxxx/… or as a https://doi.org/ link."
 
+msgid "plugins.generic.crossrefComplete.settings.crossmarkByRecord"
+msgstr "Our records reach Crossref another way"
+
+msgid "plugins.generic.crossrefComplete.settings.crossmarkByRecord.description"
+msgstr "Tick this only when this journal's records reach Crossref without OJS's Crossref plugin — a sponsor registers your DOIs, or another service deposits your metadata, Crossmark included — so this plugin never sees the deposits. The Crossmark button is then shown on an article when Crossref's own public record of it names the Crossmark policy DOI entered above. Crossref is asked once per article, with a short wait, and the answer is kept; an article whose record does not name the policy, or that Crossref could not be asked about in time, shows no button and is asked about again a day later. Leave unticked when OJS's Crossref plugin makes your deposits."
+
 msgid "plugins.generic.crossrefComplete.status.title"
 msgstr "Crossref read-back"
 

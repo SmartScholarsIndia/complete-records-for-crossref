@@ -56,6 +56,15 @@ class CrossrefCompletePlugin extends GenericPlugin
     /** At most this long spent reading records back each time the status window opens (tests shorten it). */
     public float $readBackSeconds = 25;
 
+    /** A read of Crossref's record for an article page (1.0.0.6) waits at most this long, in seconds. */
+    public const RECORD_READ_SECONDS = 3;
+
+    /** The wait in force (tests shorten it). */
+    public float $recordReadSeconds = self::RECORD_READ_SECONDS;
+
+    /** The DOIs Crossref was asked about in this request, by lower-case DOI: never twice in one page view. */
+    private array $recordAsked = [];
+
     /** What the files completed in this request carried, by lower-case DOI, until the deposit is recorded. */
     private array $sent = [];
 
@@ -113,6 +122,12 @@ class CrossrefCompletePlugin extends GenericPlugin
     public function schemaCheckOn(int $contextId): bool
     {
         return $this->getSetting($contextId, 'schemaCheck') !== false;
+    }
+
+    /** The journal's choice "Our records reach Crossref another way" (1.0.0.6): off unless the journal switched it on. */
+    public function crossmarkByRecordOn(int $contextId): bool
+    {
+        return (bool) $this->getSetting($contextId, 'crossmarkByRecord');
     }
 
     /**
@@ -475,9 +490,83 @@ class CrossrefCompletePlugin extends GenericPlugin
     }
 
     /**
+     * Whether Crossref's own public record of this DOI names the journal's Crossmark policy (1.0.0.6, for a journal whose
+     * records reach Crossref another way). Crossref is asked at most once per DOI per page view, waits at most
+     * RECORD_READ_SECONDS, and what it said is kept beside the plugin's notes (CcrCrossmark::recordDecision says when it
+     * is asked again). No answer in time, no record, or another policy: no button.
+     *
+     * @param string $policy the journal's policy DOI, bare
+     * @param string $mailto the journal's contact e-mail, for Crossref's polite pool ('' for none)
+     */
+    public function crossmarkAtCrossref(int $contextId, string $doi, string $policy, string $mailto): bool
+    {
+        $doi = strtolower(trim($doi));
+        $policy = strtolower($policy);
+        $path = \CcrCrossmark::recordPath(Config::getVar('files', 'files_dir'), $contextId, $doi);
+        if ($path === '') {
+            return false;
+        }
+        $what = \CcrCrossmark::recordDecision(\CcrCrossmark::readRecord($path), $policy, time());
+        if ($what === 'read' && !isset($this->recordAsked[$doi])) {
+            $this->recordAsked[$doi] = true;
+            $found = $this->readRecordPolicy($doi, $mailto);
+            \CcrCrossmark::writeRecord($path, $doi, $policy, $found);
+            $what = ($found !== null && $found !== '' && $found === $policy) ? 'show' : 'hide';
+        }
+        return $what === 'show';
+    }
+
+    /**
+     * The Crossmark policy Crossref's record of this DOI names, read from Crossref's public REST API
+     * (api.crossref.org/works/<doi>, as the read-back reads it): '' when the record names none or there is no record,
+     * null when Crossref could not be read in time.
+     */
+    public function readRecordPolicy(string $doi, string $mailto): ?string
+    {
+        try {
+            $response = Application::get()->getHttpClient()->request('GET', 'https://api.crossref.org/works/' . rawurlencode($doi) . ($mailto ? '?mailto=' . rawurlencode($mailto) : ''), [
+                'headers' => ['Accept' => 'application/json', 'User-Agent' => $this->userAgent($mailto)],
+                'timeout' => $this->recordReadSeconds,
+                'connect_timeout' => min(2, $this->recordReadSeconds),
+                'http_errors' => false,
+            ]);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if ($response->getStatusCode() == 404) {
+            return '';
+        }
+        if ($response->getStatusCode() != 200) {
+            return null;
+        }
+        $json = json_decode((string) $response->getBody(), true);
+        if (!isset($json['message']) || !is_array($json['message'])) {
+            return null;
+        }
+        return \CcrCrossmark::recordPolicy($json['message']);
+    }
+
+    /**
+     * How the plugin names itself to Crossref's API — its etiquette asks for a User-Agent that identifies the script,
+     * and a mailto (crossref.org/documentation/retrieve-metadata/rest-api/access-and-authentication/).
+     */
+    public function userAgent(string $mailto): string
+    {
+        $mailto = preg_replace('/[^\x21-\x7e]/', '', $mailto);   // one header line: printable characters only
+        return 'crossrefComplete/' . $this->release() . ' (https://github.com/SmartScholarsIndia/complete-records-for-crossref' . ($mailto !== '' ? '; mailto:' . $mailto : '') . ')';
+    }
+
+    /** The plugin's release, as its own version.xml says. */
+    public function release(): string
+    {
+        return preg_match('~<release>\s*([^<\s]+)\s*</release>~', (string) @file_get_contents(__DIR__ . '/version.xml'), $m) ? $m[1] : '?';
+    }
+
+    /**
      * Hook ArticleHandler::view — on an article's own page, Crossref's Crossmark button under the title and the article's
      * DOI in the tag the button reads, when the journal has set its Crossmark policy DOI and this article went to Crossref
-     * with Crossmark. Nothing else on the page changes.
+     * with Crossmark — through this plugin or, when the journal's records reach Crossref another way and the journal has
+     * said so, as Crossref's own record of it shows. Nothing else on the page changes.
      *
      * @param string $hookName
      * @param array $params [PKPRequest &$request, Issue &$issue, Submission &$article, Publication $publication]
@@ -489,12 +578,17 @@ class CrossrefCompletePlugin extends GenericPlugin
         if (!$context || !$this->getEnabled($context->getId())) {
             return Hook::CONTINUE;
         }
-        if (\CcrCompleter::bareDoi((string) $this->getSetting($context->getId(), 'crossmarkPolicy')) === '') {
+        $policy = \CcrCompleter::bareDoi((string) $this->getSetting($context->getId(), 'crossmarkPolicy'));
+        if ($policy === '') {
             return Hook::CONTINUE;
         }
         $publication = ($params[3] ?? null) ?: (($params[2] ?? null) ? $params[2]->getCurrentPublication() : null);
         $doi = $publication ? trim((string) $publication->getStoredPubId('doi')) : '';
-        if ($doi === '' || !$this->crossmarkDeposited((int) $context->getId(), $doi)) {
+        if ($doi === '') {
+            return Hook::CONTINUE;
+        }
+        if (!$this->crossmarkDeposited((int) $context->getId(), $doi)
+            && !($this->crossmarkByRecordOn((int) $context->getId()) && $this->crossmarkAtCrossref((int) $context->getId(), $doi, $policy, (string) $context->getData('contactEmail')))) {
             return Hook::CONTINUE;
         }
         $templateMgr = TemplateManager::getManager($request);

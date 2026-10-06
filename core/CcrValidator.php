@@ -47,6 +47,25 @@ final class CcrValidator
         return preg_match('~^http://www\.crossref\.org/schema/(\d+\.\d+\.\d+)$~', (string) $root->namespaceURI, $m) ? $m[1] : null;
     }
 
+    /**
+     * The schema a file is checked against: [label, file name] — "5.4.0" and crossref5.4.0.xsd for a deposit, "grant_id
+     * 0.2.0" and grant_id0.2.0.xsd for a grant (Crossref gives grants a schema and a namespace of their own); null for
+     * anything else. 4 Oct 2026, for the grants service.
+     */
+    public static function schemaOf(DOMDocument $doc)
+    {
+        $v = self::version($doc);
+        if ($v !== null) {
+            return [$v, 'crossref' . $v . '.xsd'];
+        }
+        $root = $doc->documentElement;
+        if ($root && $root->localName === 'doi_batch'
+            && preg_match('~^http://www\.crossref\.org/grant_id/(\d+\.\d+\.\d+)$~', (string) $root->namespaceURI, $m)) {
+            return ['grant_id ' . $m[1], 'grant_id' . $m[1] . '.xsd'];
+        }
+        return null;
+    }
+
     /** https://www.crossref.org/schemas/a.xsd -> <cache>/www.crossref.org/schemas/a.xsd — never outside the cache. */
     public static function localPath($cacheDir, $url)
     {
@@ -186,13 +205,14 @@ final class CcrValidator
                 return $out;
             }
         }
-        $v = self::version($doc);
-        if ($v === null) {
+        $schema = self::schemaOf($doc);
+        if ($schema === null) {
             $out['why'] = 'not a Crossref deposit file';
             return $out;
         }
+        list($v, $file) = $schema;
         $out['version'] = $v;
-        $rootUrl = rtrim($schemasUrl, '/') . '/crossref' . $v . '.xsd';
+        $rootUrl = rtrim($schemasUrl, '/') . '/' . $file;
         list($files, $missing, $stoodIn) = self::mirror($rootUrl, $cacheDir, $fetch);
         $out['files'] = count($files);
         $out['stoodIn'] = $stoodIn;

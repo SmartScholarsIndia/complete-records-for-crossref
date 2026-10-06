@@ -36,6 +36,9 @@
 			<p>{translate key="plugins.generic.crossrefComplete.settings.crossmark.description"}</p>
 			{fbvElement type="text" id="crossmarkPolicy" value=$crossmarkPolicy label="plugins.generic.crossrefComplete.settings.crossmarkPolicy" size=$fbvStyles.size.MEDIUM}
 		{/fbvFormSection}
+		{fbvFormSection list=true description="plugins.generic.crossrefComplete.settings.crossmarkByRecord.description"}
+			{fbvElement type="checkbox" id="crossmarkByRecord" checked=$crossmarkByRecord label="plugins.generic.crossrefComplete.settings.crossmarkByRecord"}
+		{/fbvFormSection}
 	{/fbvFormArea}
 
 	{fbvFormButtons}

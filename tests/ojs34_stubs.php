@@ -81,7 +81,12 @@ namespace APP\core {
 }
 
 namespace {
-    class StubContext { private $id; public function __construct($id) { $this->id = $id; } public function getId() { return $this->id; } }
+    class StubContext {
+        private $id; public $contactEmail = '';
+        public function __construct($id, $contactEmail = '') { $this->id = $id; $this->contactEmail = $contactEmail; }
+        public function getId() { return $this->id; }
+        public function getData($k) { return $k === 'contactEmail' ? $this->contactEmail : null; }
+    }
     class StubContextDao {
         private $ids; public function __construct($ids) { $this->ids = $ids; }
         public function getAll() { return new StubIter(array_map(fn ($i) => new StubContext($i), $this->ids)); }
@@ -136,10 +141,20 @@ namespace {
         public function getBody() { return $this->body; }
     }
     class StubHttp {
-        public array $answers = []; public array $asked = []; public $fail = null; public $handler = null;
+        public array $answers = []; public array $asked = []; public array $options = []; public $fail = null; public $handler = null;
+        /** seconds the answer takes; past the request's 'timeout' option it is an error, not an answer, as with Guzzle's curl handler (CURLOPT_TIMEOUT_MS) */
+        public float $delay = 0;
         public function request($m, $url, $o) {
             $this->asked[] = $url;
+            $this->options[] = $o;
             if ($this->fail) throw new \Exception($this->fail);
+            if ($this->delay > 0) {
+                if (isset($o['timeout']) && $this->delay > $o['timeout']) {
+                    usleep((int) ($o['timeout'] * 1000000));
+                    throw new \Exception('cURL error 28: Operation timed out after ' . (int) ($o['timeout'] * 1000) . ' milliseconds');
+                }
+                usleep((int) ($this->delay * 1000000));
+            }
             if ($this->handler) return ($this->handler)($url);
             foreach ($this->answers as $match => $r) if (str_contains($url, $match)) return $r;
             return new StubResponse(404, '{}');

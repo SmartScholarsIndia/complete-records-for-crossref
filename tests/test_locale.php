@@ -47,7 +47,7 @@ foreach ($lines as $v => $l) {
         $used = array_merge($used, $k[1]);
     }
     foreach (glob("$base/templates/*.tpl") as $f) {
-        preg_match_all('/(?:key|label|title)="(plugins\.generic\.crossrefComplete\.[A-Za-z0-9_.]+)"/', file_get_contents($f), $k);
+        preg_match_all('/(?:key|label|title|description)="(plugins\.generic\.crossrefComplete\.[A-Za-z0-9_.]+)"/', file_get_contents($f), $k);
         $used = array_merge($used, $k[1]);
     }
     $used = array_values(array_unique($used));

@@ -9,7 +9,8 @@
  * @class CrossrefCompleteSettingsForm
  *
  * @brief The journal's choices: send the reference list, send affiliations, and (only with Crossmark turned on at
- *  Crossref) the Crossmark policy DOI.
+ *  Crossref) the Crossmark policy DOI — and, for a journal whose records reach Crossref another way, whether the
+ *  Crossmark button follows Crossref's own record of each article (1.0.0.6).
  */
 
 namespace APP\plugins\generic\crossrefComplete;
@@ -44,12 +45,13 @@ class CrossrefCompleteSettingsForm extends Form
             'affiliations' => $o['affiliations'],
             'crossmarkPolicy' => $o['crossmarkPolicy'],
             'schemaCheck' => $this->plugin->schemaCheckOn($this->contextId),
+            'crossmarkByRecord' => $this->plugin->crossmarkByRecordOn($this->contextId),
         ];
     }
 
     public function readInputData()
     {
-        $this->readUserVars(['references', 'affiliations', 'crossmarkPolicy', 'schemaCheck']);
+        $this->readUserVars(['references', 'affiliations', 'crossmarkPolicy', 'schemaCheck', 'crossmarkByRecord']);
     }
 
     public function fetch($request, $template = null, $display = false)
@@ -65,6 +67,7 @@ class CrossrefCompleteSettingsForm extends Form
         $this->plugin->updateSetting($this->contextId, 'affiliations', (bool) $this->getData('affiliations'), 'bool');
         $this->plugin->updateSetting($this->contextId, 'schemaCheck', (bool) $this->getData('schemaCheck'), 'bool');
         $this->plugin->updateSetting($this->contextId, 'crossmarkPolicy', \CcrCompleter::bareDoi((string) $this->getData('crossmarkPolicy')), 'string');
+        $this->plugin->updateSetting($this->contextId, 'crossmarkByRecord', (bool) $this->getData('crossmarkByRecord'), 'bool');
         parent::execute(...$functionArgs);
     }
 }

@@ -58,6 +58,43 @@ CcrCrossmark::mark($dir, 7, '10.5555/EHJ.11.S1.32', '10.5555/example.crossmark')
 ck('no files directory set: nothing written, never noted', CcrCrossmark::markerPath('', 7, '10.1/x') === '' && !CcrCrossmark::mark('', 7, '10.1/x', 'p') && !CcrCrossmark::marked('', 7, '10.1/x'));
 array_map('unlink', glob($dir . '/crossrefComplete/crossmark/7/*')); @rmdir($dir . '/crossrefComplete/crossmark/7'); @rmdir($dir . '/crossrefComplete/crossmark'); @rmdir($dir . '/crossrefComplete'); @rmdir($dir);
 
+echo "\n--- 1.0.0.6: what Crossref's own record says, for a journal whose records reach Crossref another way ---\n";
+ck('the policy a record names (update-policy, a doi.org address): the bare DOI, lower case', CcrCrossmark::recordPolicy(['update-policy' => 'http://dx.doi.org/10.5555/EJT.CROSSMARK-POLICY']) === '10.5555/ejt.crossmark-policy');
+ck('…https://doi.org/ and "doi:" read the same; a bare DOI too', CcrCrossmark::recordPolicy(['update-policy' => 'https://doi.org/10.5555/ejt.crossmark-policy']) === '10.5555/ejt.crossmark-policy'
+   && CcrCrossmark::recordPolicy(['update-policy' => 'doi:10.5555/ejt.crossmark-policy']) === '10.5555/ejt.crossmark-policy'
+   && CcrCrossmark::recordPolicy(['update-policy' => '10.5555/ejt.crossmark-policy']) === '10.5555/ejt.crossmark-policy');
+ck('a record naming none, or not a record, or something that is not a DOI: \'\'', CcrCrossmark::recordPolicy(['DOI' => '10.1/x']) === '' && CcrCrossmark::recordPolicy('x') === ''
+   && CcrCrossmark::recordPolicy(['update-policy' => 'https://example.org/policy']) === '' && CcrCrossmark::recordPolicy(['update-policy' => ['10.1/x']]) === '');
+$dir = sys_get_temp_dir() . '/ccr-cmr-' . bin2hex(random_bytes(4));
+$p = CcrCrossmark::recordPath($dir, 7, '10.5555/EJT.2025.V10.I12.PP35-41');
+ck('kept beside the notes, one small file per DOI under its journal, named by the DOI\'s md5, case-blind', $p === $dir . '/crossrefComplete/crossmark-record/7/' . md5('10.5555/ejt.2025.v10.i12.pp35-41') . '.json'
+   && $p === CcrCrossmark::recordPath($dir . '/', 7, ' 10.5555/ejt.2025.v10.i12.pp35-41 '), $p);
+ck('no files directory set: no path', CcrCrossmark::recordPath('', 7, '10.1/x') === '' && CcrCrossmark::readRecord('') === null && !CcrCrossmark::writeRecord('', '10.1/x', 'p', 'p'));
+ck('nothing kept yet: read Crossref', CcrCrossmark::readRecord($p) === null && CcrCrossmark::recordDecision(null, '10.5555/ejt.crossmark-policy', time()) === 'read');
+ck('no policy set for the journal: hide, whatever is kept', CcrCrossmark::recordDecision(null, '', time()) === 'hide' && CcrCrossmark::recordDecision(['policy' => 'p', 'found' => 'p', 'at' => time()], '', time()) === 'hide');
+$now = 1791300000;
+ck('kept: Crossref named the policy', CcrCrossmark::writeRecord($p, '10.5555/EJT.2025.V10.I12.PP35-41', '10.5555/EJT.CROSSMARK-POLICY', '10.5555/ejt.crossmark-policy', $now)
+   && CcrCrossmark::readRecord($p) === ['policy' => '10.5555/ejt.crossmark-policy', 'found' => '10.5555/ejt.crossmark-policy', 'at' => $now], CcrCrossmark::readRecord($p));
+ck('…the record names the journal\'s policy: show — today, in a year, with no second read', CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.crossmark-policy', $now) === 'show'
+   && CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/EJT.Crossmark-Policy', $now + 400 * 86400) === 'show');
+ck('…the journal changed its policy DOI since: read Crossref again now', CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.policy-2', $now + 10) === 'read');
+CcrCrossmark::writeRecord($p, '10.5555/ejt.2025.v10.i12.pp35-41', '10.5555/ejt.policy-2', '10.5555/ejt.crossmark-policy', $now);
+ck('kept: the record names ANOTHER policy than the journal\'s: hide, and read again only after a day', CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.policy-2', $now + 86399) === 'hide'
+   && CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.policy-2', $now + 86400) === 'read');
+ck('…but the journal set its policy back to the one the record names: show at once', CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.crossmark-policy', $now + 10) === 'show');
+CcrCrossmark::writeRecord($p, '10.5555/ejt.2025.v10.i12.pp35-41', '10.5555/ejt.crossmark-policy', '', $now);
+ck('kept: the record names no policy (or there is no record): hide; read again after a day', CcrCrossmark::readRecord($p)['found'] === ''
+   && CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.crossmark-policy', $now + 3600) === 'hide'
+   && CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.crossmark-policy', $now + 86400) === 'read');
+CcrCrossmark::writeRecord($p, '10.5555/ejt.2025.v10.i12.pp35-41', '10.5555/ejt.crossmark-policy', null, $now);
+ck('kept: Crossref could not be read: hide; read again after a day', CcrCrossmark::readRecord($p)['found'] === null
+   && CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.crossmark-policy', $now + 86399) === 'hide'
+   && CcrCrossmark::recordDecision(CcrCrossmark::readRecord($p), '10.5555/ejt.crossmark-policy', $now + 86400) === 'read');
+file_put_contents($p, "not json\n");
+ck('a damaged file counts as nothing kept', CcrCrossmark::readRecord($p) === null);
+ck('a day is a day', CcrCrossmark::RECORD_RETRY_SECONDS === 86400);
+array_map('unlink', glob($dir . '/crossrefComplete/crossmark-record/7/*')); @rmdir($dir . '/crossrefComplete/crossmark-record/7'); @rmdir($dir . '/crossrefComplete/crossmark-record'); @rmdir($dir . '/crossrefComplete'); @rmdir($dir);
+
 echo "\n--- the deposits kept for the read-back fit OJS 3.3's column (TEXT, 65,535 bytes) ---\n";
 $list = [];
 for ($i = 0; $i < 500; $i++) {

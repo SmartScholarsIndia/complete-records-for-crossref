@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.0.6 — 6 October 2026
+
+- A journal whose records reach Crossref another way — a sponsor registers its DOIs, or another service deposits the
+  metadata, Crossmark included — never deposits through this plugin, so no article of it showed the button. A new
+  choice in the settings, **Our records reach Crossref another way** (off unless the journal ticks it), shows the button
+  for an article when Crossref's own public record of it names the journal's Crossmark policy DOI. The record is read
+  from Crossref's REST API (`api.crossref.org/works/<doi>`, its `update-policy` field — in Crossref's polite pool, with
+  the journal's contact e-mail, and a User-Agent naming the plugin and its release), the policy compared whatever its
+  case or doi.org form, and the answer kept as one small file in OJS's files directory
+  (`crossrefComplete/crossmark-record/<journal>/<md5 of the DOI>.json`). Crossref is asked at most once per article per
+  page view, is waited for at most 3 seconds, and is asked again only when the journal's policy DOI changes or, for a
+  record that does not name it or a read that failed, after a day. No answer in time, no record, or another policy: no
+  button. The button, its place under the title and the `dc.identifier` tag are as in 1.0.0.4; with the choice off,
+  nothing changes from 1.0.0.5.
+- The schema check (`core/CcrValidator.php`, the pre-deposit tool) also recognises a grant deposit (Crossref's `grant_id`
+  schema, its own namespace) and checks it against that schema instead of refusing it as an unknown version.
+
 ## 1.0.0.5 — 3 October 2026
 
 - The Crossmark button keeps Crossref's own size, 150 pixels wide, on every theme. On a journal's live page the theme's

@@ -12,7 +12,7 @@ Developed and maintained by **Smart Scholars** (Hyderabad, India) · mou@smartsc
 | The article's reference list (`<citation_list>`), as entered in OJS | yes | yes | yes |
 | Each author's affiliation | plain `<affiliation>` | `<affiliations>` with institution name (and ROR ID when one is stored) | already sent by OJS 3.5 — left as it is |
 | Crossmark — only when you enter your Crossmark policy DOI | yes | yes | yes |
-| Crossref's Crossmark button under the title of each article that went to Crossref with Crossmark | yes | yes | yes |
+| Crossref's Crossmark button under the title of each article that went to Crossref with Crossmark — through this plugin or, when the journal says its records reach Crossref another way, as Crossref's own record of the article shows | yes | yes | yes |
 
 OJS's own Crossref plugin (stable-3_3_0 / 3_4_0 / 3_5_0, read October 2026) sends titles, authors with ORCID iDs,
 abstracts, dates, pages, licences and full-text links, but no reference list, no affiliations before OJS 3.5 and no
@@ -67,6 +67,12 @@ deposits in its own time; a record is never called missing before Crossref shows
    Every deposit then carries Crossmark, and each article that has gone to Crossref with it shows Crossref's Crossmark
    button just under its title (Crossref's own widget, unaltered, held at Crossref's 150 pixels whatever the theme's
    own rules for images say). Articles not yet deposited with Crossmark show none.
+5. Only when your records reach Crossref another way — a sponsor registers your DOIs, or another service deposits your
+   metadata with Crossmark, so this plugin never sees the deposits: tick **Our records reach Crossref another way** as
+   well. The button then follows Crossref's own public record of each article: it is shown when that record names your
+   Crossmark policy DOI. Crossref is asked once per article (its public REST API, with your journal's contact e-mail),
+   with a short wait, and the answer is kept in OJS's files directory; an article whose record does not name the policy,
+   or that Crossref could not be asked about in time, shows no button and is asked about again a day later.
 
 ## Supported versions and maintenance
 

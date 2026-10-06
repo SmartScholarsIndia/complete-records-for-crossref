@@ -33,6 +33,10 @@ cp "$tmp/531/crossref5.3.1.xsd" "$tmp/531/common5.3.1.xsd" "$S/"
 for f in crossref common languages mediatypes fundingdata; do
   cp "$tmp/540/${f}5.4.0.xsd" "$tmp/550/${f}5.5.0.xsd" "$S/"
 done
+# 4 Oct 2026: the resource-only schema too — doi_resources5.4.0.xsd, the file the engine's references, licence, funding and
+# relations deposits are written against (it is in the 5.4.0 set of the same commonmeta commit). It includes
+# common5.4.0.xsd and imports fundingdata5.4.0, fundref, AccessIndicators, relations and clinicaltrials, all copied here.
+cp "$tmp/540/doi_resources5.4.0.xsd" "$S/"
 cp "$tmp/550/fundref.xsd" "$tmp/550/AccessIndicators.xsd" "$tmp/550/relations.xsd" "$tmp/550/clinicaltrials.xsd" \
    "$tmp/550/module-ali.xsd" "$tmp/550/xml.xsd" "$tmp"/550/JATS-*.xsd "$S/"
 cp -r "$tmp/550/standard-modules" "$S/"
