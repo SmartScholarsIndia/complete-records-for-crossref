@@ -33,7 +33,7 @@ class CmExport { private $t; function __construct($t) { $this->t = $t; } functio
 $GLOBALS['OJS_FILES_DIR'] = sys_get_temp_dir() . '/ccr-files-cm33-' . bin2hex(random_bytes(4));
 require __DIR__ . '/../build/ojs-3.3/crossrefComplete/CrossrefCompletePlugin.inc.php';
 $v = simplexml_load_file(__DIR__ . '/../build/ojs-3.3/crossrefComplete/version.xml');
-ck('release 1.0.0.6', (string) $v->release === '1.0.0.6', (string) $v->release);
+ck('release 1.0.0.7', (string) $v->release === '1.0.0.7', (string) $v->release);
 
 $DOI_A = '10.5555/ejt.2025.v10.i12.pp35-41';   // the two DOIs of the deposit-file fixture
 $DOI_B = '10.5555/ejt.2020.v5.i3.pp15-18';
@@ -45,10 +45,20 @@ $subDao->byDoi[$DOI_A] = new StubSubmission(1, $pubA, $DOI_A);
 $subDao->byDoi[$DOI_B] = new StubSubmission(1, $pubB, $DOI_B);
 DAORegistry::$daos = array('SubmissionDAO' => $subDao, 'CitationDAO' => new StubCitationDAO());
 
+// 1.0.0.7: the plugin's folder as 1.0.0.6 made it (0755), with a script someone else put there
+$cr = $GLOBALS['OJS_FILES_DIR'] . '/crossrefComplete';
+mkdir("$cr/crossmark/16", 0755, true);
+chmod($cr, 0755);
+file_put_contents("$cr/crossmark/16/shell.php", '<?php /* stand-in */');
 $plugin = new CrossrefCompletePlugin();
 $plugin->enabledContexts = array(1);
 $plugin->register('generic', 'plugins/generic/crossrefComplete', null);
 ck('the article page hook is added', isset(HookRegistry::$hooks['ArticleHandler::view']));
+clearstatcache();
+ck('1.0.0.7: the first request after the upgrade puts the deny-all guard in the plugin\'s folder and closes it (0750), before anything is written there',
+   @file_get_contents("$cr/.htaccess") === CcrFiles::HTACCESS && substr(sprintf('%o', fileperms($cr)), -4) === '0750');
+ck('…the other file is left for the site\'s administrator (the plugin deletes nothing it did not write)', is_file("$cr/crossmark/16/shell.php"));
+unlink("$cr/crossmark/16/shell.php");
 $plugin->updateSetting(1, 'schemaCheck', false, 'bool');   // no network here; the schema check is tested elsewhere
 $plugin->updateSetting(1, 'crossmarkPolicy', $POLICY, 'string');
 

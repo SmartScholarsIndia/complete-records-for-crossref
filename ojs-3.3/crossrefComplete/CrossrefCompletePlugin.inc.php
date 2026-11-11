@@ -74,6 +74,9 @@ class CrossrefCompletePlugin extends GenericPlugin {
 			HookRegistry::register('articlecrossrefxmlfilter::execute', array($this, 'completeDeposit'), HOOK_SEQUENCE_LAST);
 			HookRegistry::register('crossrefexportplugin::deposited', array($this, 'noteDeposit'));
 			HookRegistry::register('ArticleHandler::view', array($this, 'crossmarkOnArticlePage'));
+			// 1.0.0.7: the plugin's folder in OJS's files directory refuses the web from the first request after an upgrade,
+			// before anything is written there again (core/CcrFiles.php; nothing is made where the folder does not exist)
+			CcrFiles::guard(rtrim((string) Config::getVar('files', 'files_dir'), '/') . '/crossrefComplete');
 		}
 		return $success;
 	}
@@ -143,7 +146,7 @@ class CrossrefCompletePlugin extends GenericPlugin {
 	}
 
 	/**
-	 * Where Crossref's schema files are kept: inside OJS's files directory, which the web cannot reach.
+	 * Where Crossref's schema files are kept: in the plugin's folder in OJS's files directory, under its deny-all guard (1.0.0.7).
 	 * @return string
 	 */
 	function schemaCacheDir() {

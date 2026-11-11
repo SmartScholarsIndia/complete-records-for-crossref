@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.0.0.7 — 7 November 2026
+
+A security release. The plugin keeps a few small files in its own folder in OJS's files directory
+(`crossrefComplete/`). OJS's files directory belongs outside the website's folder, but where it sits inside it, anything
+put in the plugin's folders could be opened, and run, from the web. Now:
+
+- **Every file the plugin keeps is written by one routine** (`core/CcrFiles.php`), only under a name the plugin built
+  itself and only with the ending its use allows: `.txt` for the Crossmark notes, `.json` for what Crossref's record
+  said, `.xsd` for the copies of Crossref's schema files. A name a web server could run — `.php` (and `.php5` …),
+  `.pht`, `.phtml`, `.phar`, `.phps`, `.shtml`, `.shtm`, `.cgi`, `.pl`, `.py`, `.sh`, `.htaccess`, in any letter case
+  and anywhere in the name (`x.php.txt` too) — and any hidden name, `..` or empty part is refused, with nothing written.
+- **The copies of Crossref's schema files take only `.xsd` names.** A schema names the next file by its address, and
+  that address chose the copy's name; a set naming any other file (`…/x.php`, say) is now "not checked" with that
+  address named, and the file is neither fetched nor read nor kept. Crossref's own sets (4.3.6, 5.3.1, 5.4.0) are all
+  `.xsd` and are checked as before.
+- **The plugin's folder carries a deny-all `.htaccess`** (Apache 2.4 and 2.2, and servers that read Apache's rules), put there on the first
+  request after the upgrade and again whenever it is missing or changed; whatever stood there is kept beside it as
+  `.htaccess.was-<time>`. Folders are made `0750` and files `0640`, and the plugin's folder is set to `0750`, so no
+  other account on the server reads or writes them and a web server running as another account cannot enter them.
+  Tested against a real Apache 2.4 with mod_php: a script put in `crossrefComplete/crossmark/<journal>/` ran from the
+  web before, and is refused (403) by either safeguard alone.
+- Nothing the plugin did not write is touched or deleted: a file someone else put in its folders stays for the site's
+  administrator to look at.
+- The plugin serves no file to a browser; nothing else changes.
+
 ## 1.0.0.6 — 6 October 2026
 
 - A journal whose records reach Crossref another way — a sponsor registers its DOIs, or another service deposits the

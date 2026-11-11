@@ -23,6 +23,8 @@
  *
  * Copyright (c) 2026 Smart Scholars. Distributed under the GNU GPL v3.
  */
+require_once __DIR__ . '/CcrFiles.php';   // 1.0.0.7: the copy holds .xsd files only, under a deny-all guard
+
 final class CcrValidator
 {
     const SCHEMAS = 'https://www.crossref.org/schemas/';
@@ -100,6 +102,12 @@ final class CcrValidator
             }
             $seen[$url] = true;
             $path = self::localPath($cacheDir, $url);
+            // 1.0.0.7: a schema names the next file's address, and so its name in the copy — only a plain .xsd name is ever
+            // fetched, read or kept (never a name a web server could run, e.g. https://example.org/x.php)
+            if (!CcrFiles::safe(substr($path, strlen(rtrim($cacheDir, '/')) + 1), ['xsd'])) {
+                $missing[$url] = 'refused: the copy keeps schema files (.xsd) only';
+                continue;
+            }
             $data = is_file($path) && filesize($path) > 0 ? file_get_contents($path) : null;
             if ($data !== null && is_file($path . '.stand-in')) {
                 $stoodIn[$url] = trim((string) file_get_contents($path . '.stand-in'));
@@ -124,7 +132,7 @@ final class CcrValidator
                     $missing[$url] = $why;
                     continue;
                 }
-                if (!self::keep($path, $data) || (isset($stoodIn[$url]) && !self::keep($path . '.stand-in', self::XML_XSD))) {
+                if (!self::keep($cacheDir, $path, $data) || (isset($stoodIn[$url]) && !self::keep($cacheDir, $path . '.stand-in', self::XML_XSD))) {
                     $missing[$url] = 'the copy could not be written in ' . dirname($path);
                     continue;
                 }
@@ -155,7 +163,7 @@ final class CcrValidator
         if ($data === null && $fetch !== null) {
             $data = $fetch(self::XML_XSD);
             if (is_string($data) && self::isXmlNamespaceSchema($data)) {
-                self::keep($p, $data);
+                self::keep($cacheDir, $p, $data);
             }
         }
         return is_string($data) && self::isXmlNamespaceSchema($data) ? $data : null;
@@ -173,18 +181,13 @@ final class CcrValidator
         return $r && $r->localName === 'schema' && $r->namespaceURI === self::XS && $r->getAttribute('targetNamespace') === self::XML_NS;
     }
 
-    /** Write a copy atomically (a part file, then a rename); false when it cannot be written. */
-    private static function keep($path, $data)
+    /**
+     * Write a copy atomically (a part file, then a rename) through CcrFiles: a .xsd file or its .stand-in note, inside the
+     * copy, which carries a deny-all guard (1.0.0.7); false when it cannot be written.
+     */
+    private static function keep($cacheDir, $path, $data)
     {
-        if (!is_dir(dirname($path)) && !@mkdir(dirname($path), 0755, true) && !is_dir(dirname($path))) {
-            return false;
-        }
-        $tmp = $path . '.part' . getmypid();
-        if (@file_put_contents($tmp, $data) === false || !@rename($tmp, $path)) {
-            @unlink($tmp);
-            return false;
-        }
-        return true;
+        return CcrFiles::write($cacheDir, $path, $data, ['xsd', 'stand-in']);
     }
 
     /**

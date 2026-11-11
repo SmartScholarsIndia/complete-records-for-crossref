@@ -31,6 +31,7 @@
  */
 
 require_once __DIR__ . '/CcrCompleter.php';   // CcrCompleter::bareDoi, the one reading of a DOI the plugin uses
+require_once __DIR__ . '/CcrFiles.php';       // 1.0.0.7: every file the plugin keeps is written there
 
 class CcrCrossmark
 {
@@ -100,10 +101,8 @@ class CcrCrossmark
     public static function mark($filesDir, $contextId, $doi, $policy)
     {
         $path = self::markerPath($filesDir, $contextId, $doi);
-        if ($path === '') return false;
-        $dir = dirname($path);
-        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) return false;
-        return @file_put_contents($path, strtolower(trim((string) $doi)) . "\t" . trim((string) $policy) . "\t" . gmdate('Y-m-d\TH:i:s\Z') . "\n") !== false;
+        // the plugin's folder, <files_dir>/crossrefComplete, three levels up from the note (CcrFiles: .txt only, guarded)
+        return $path !== '' && CcrFiles::write(dirname($path, 3), $path, strtolower(trim((string) $doi)) . "\t" . trim((string) $policy) . "\t" . gmdate('Y-m-d\TH:i:s\Z') . "\n", array('txt'));
     }
 
     /**
@@ -170,11 +169,10 @@ class CcrCrossmark
     public static function writeRecord($path, $doi, $policy, $found, $at = null)
     {
         if ($path === '') return false;
-        $dir = dirname($path);
-        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) return false;
         $v = array('doi' => strtolower(trim((string) $doi)), 'policy' => strtolower((string) $policy),
                    'found' => $found === null ? null : (string) $found, 'at' => $at === null ? time() : (int) $at);
-        return @file_put_contents($path, json_encode($v) . "\n") !== false;
+        // <files_dir>/crossrefComplete, three levels up from the record (CcrFiles: .json only, guarded)
+        return CcrFiles::write(dirname($path, 3), $path, json_encode($v) . "\n", array('json'));
     }
 
     /**

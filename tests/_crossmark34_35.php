@@ -20,7 +20,7 @@ use PKP\plugins\Hook;
 class CmRequest { public function __construct(private $c) {} public function getContext() { return $this->c; } }
 class CmExport { public function __construct(private $t) {} public function getSetting($c, $n) { return $n === 'testMode' ? $this->t : null; } }
 
-ck('release 1.0.0.6', (string) simplexml_load_file("$dir/version.xml")->release === '1.0.0.6');
+ck('release 1.0.0.7', (string) simplexml_load_file("$dir/version.xml")->release === '1.0.0.7');
 $DOI_A = '10.5555/ejt.2025.v10.i12.pp35-41';
 $DOI_B = '10.5555/ejt.2020.v5.i3.pp15-18';
 $POLICY = '10.5555/example.crossmark';
@@ -33,10 +33,20 @@ $repo->byDoi[$DOI_B] = new StubSubmission(2, $pubB, $DOI_B);
 APP\facades\Repo::$submissions = $repo;
 PKP\db\DAORegistry::$daos = ['CitationDAO' => new StubCitationDAO()];
 
+// 1.0.0.7: the plugin's folder as 1.0.0.6 made it (0755), with a script someone else put there
+$cr = $GLOBALS['OJS_FILES_DIR'] . '/crossrefComplete';
+mkdir("$cr/crossmark/16", 0755, true);
+chmod($cr, 0755);
+file_put_contents("$cr/crossmark/16/shell.php", '<?php /* stand-in */');
 $plugin = new CrossrefCompletePlugin();
 $plugin->enabledContexts = [2];
 $plugin->register('generic', 'plugins/generic/crossrefComplete', null);
 ck('the article page hook is added', isset(Hook::$hooks['ArticleHandler::view']));
+clearstatcache();
+ck('1.0.0.7: the first request after the upgrade puts the deny-all guard in the plugin\'s folder and closes it (0750), before anything is written there',
+   @file_get_contents("$cr/.htaccess") === \CcrFiles::HTACCESS && substr(sprintf('%o', fileperms($cr)), -4) === '0750');
+ck('…the other file is left for the site\'s administrator (the plugin deletes nothing it did not write)', is_file("$cr/crossmark/16/shell.php"));
+unlink("$cr/crossmark/16/shell.php");
 $plugin->updateSetting(2, 'schemaCheck', false, 'bool');
 $plugin->updateSetting(2, 'crossmarkPolicy', $POLICY, 'string');
 
